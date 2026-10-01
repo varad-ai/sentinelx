@@ -1,4 +1,6 @@
 from datetime import datetime
+from ioc.extractor import extract_iocs
+
 
 LOG_FILE = "honeypot/connections.log"
 
@@ -27,4 +29,8 @@ with open(LOG_FILE, "r") as log_file:
         event = parse_log_line(line)
 
         if event:
-            print(event)
+            print("Event:", event)
+
+            iocs = extract_iocs(event)
+
+            print("IOCs:", iocs)

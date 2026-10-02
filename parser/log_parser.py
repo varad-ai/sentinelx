@@ -10,13 +10,17 @@ def parse_log_line(line):
         parts = line.strip().split(" | ")
 
         timestamp = datetime.fromisoformat(parts[0])
-        ip = parts[1].split("=")[1]
-        port = int(parts[2].split("=")[1])
+        event_type = parts[1].split("=")[1]
+        ip = parts[2].split("=")[1]
+        port = int(parts[3].split("=")[1])
+        service = parts[4].split("=")[1]
 
         return {
             "timestamp": timestamp,
+            "event_type": event_type,
             "ip": ip,
-            "port": port
+            "port": port,
+            "service": service
         }
 
     except (ValueError, IndexError):
@@ -34,3 +38,4 @@ with open(LOG_FILE, "r") as log_file:
             iocs = extract_iocs(event)
 
             print("IOCs:", iocs)
+

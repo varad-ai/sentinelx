@@ -4,6 +4,13 @@ from ioc.extractor import extract_iocs
 from detection.engine import detect_event
 from risk_engine.engine import calculate_risk
 
+from database.db import (
+    initialize_database,
+    save_event,
+    save_detections,
+    save_iocs
+)
+
 
 LOG_FILE = "honeypot/connections.log"
 
@@ -33,6 +40,11 @@ def parse_log_line(line):
         return None
 
 
+# Initialize database
+initialize_database()
+
+
+# Read honeypot logs
 with open(LOG_FILE, "r") as log_file:
 
     for line in log_file:
@@ -61,5 +73,17 @@ with open(LOG_FILE, "r") as log_file:
             risk = calculate_risk(detections)
 
             print("\nRisk:", risk)
+
+            # Save event to database
+            event_id = save_event(event, risk)
+
+            # Save detections
+            save_detections(event_id, detections)
+
+            # Save IOCs
+            save_iocs(event_id, iocs)
+
+            print("\nDatabase: Event saved")
+            print("Event ID:", event_id)
 
             print("==============================")

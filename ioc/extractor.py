@@ -10,7 +10,7 @@ def extract_iocs(event):
         "hashes": []
     }
 
-    # Extract IP address
+    # Extract source IP
     ip = event.get("ip")
 
     if ip:
@@ -20,7 +20,7 @@ def extract_iocs(event):
         except ValueError:
             pass
 
-    # Only inspect actual data/content fields
+    # Only inspect actual event data
     text = event.get("data", "")
 
     if not isinstance(text, str):

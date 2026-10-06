@@ -1,5 +1,8 @@
 from datetime import datetime
+
 from ioc.extractor import extract_iocs
+from detection.engine import detect_event
+from risk_engine.engine import calculate_risk
 
 
 LOG_FILE = "honeypot/connections.log"
@@ -31,12 +34,32 @@ def parse_log_line(line):
 
 
 with open(LOG_FILE, "r") as log_file:
+
     for line in log_file:
+
         event = parse_log_line(line)
 
         if event:
+
+            print("\n==============================")
+            print("EVENT")
+            print("==============================")
+
             print("Event:", event)
 
+            # Extract IOCs
             iocs = extract_iocs(event)
 
-            print("IOCs:", iocs)
+            print("\nIOCs:", iocs)
+
+            # Detect suspicious activity
+            detections = detect_event(event, iocs)
+
+            print("\nDetections:", detections)
+
+            # Calculate risk
+            risk = calculate_risk(detections)
+
+            print("\nRisk:", risk)
+
+            print("==============================")

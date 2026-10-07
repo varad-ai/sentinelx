@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SentinelX Dashboard</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        header {
+            padding: 24px 40px;
+            border-bottom: 1px solid #1e293b;
+            background: #111827;
+        }
+
+        header h1 {
+            font-size: 28px;
+        }
+
+        header p {
+            margin-top: 6px;
+            color: #94a3b8;
+        }
+
+        .container {
+            padding: 30px 40px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 22px;
+        }
+
+        .card h3 {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .card .value {
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+        .dashboard-section {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 24px;
+        }
+
+        .dashboard-section h2 {
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 14px;
+            border-bottom: 1px solid #334155;
+        }
+
+        th {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        .critical {
+            color: #f87171;
+            font-weight: bold;
+        }
+
+        .high {
+            color: #fb923c;
+            font-weight: bold;
+        }
+
+        .medium {
+            color: #facc15;
+            font-weight: bold;
+        }
+
+        .low {
+            color: #4ade80;
+            font-weight: bold;
+        }
+
+        #status {
+            margin-top: 20px;
+            color: #94a3b8;
+        }
+
+        @media (max-width: 1000px) {
+            .cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>SentinelX</h1>
+    <p>Adaptive Honeypot & Threat Intelligence Platform</p>
+</header>
+
+<div class="container">
+
+    <div class="cards">
+
+        <div class="card">
+            <h3>Total Events</h3>
+            <div class="value" id="total-events">-</div>
+        </div>
+
+        <div class="card">
+            <h3>Unique IPs</h3>
+            <div class="value" id="unique-ips">-</div>
+        </div>
+
+        <div class="card">
+            <h3>High Risk</h3>
+            <div class="value" id="high-risk">-</div>
+        </div>
+
+        <div class="card">
+            <h3>Critical</h3>
+            <div class="value" id="critical-events">-</div>
+        </div>
+
+        <div class="card">
+            <h3>Total IOCs</h3>
+            <div class="value" id="total-iocs">-</div>
+        </div>
+
+    </div>
+
+
+    <div class="dashboard-section">
+
+        <h2>Recent Events</h2>
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Source IP</th>
+                    <th>Service</th>
+                    <th>Risk Score</th>
+                    <th>Risk Level</th>
+                    <th>Data</th>
+                </tr>
+            </thead>
+
+            <tbody id="events-table">
+                <tr>
+                    <td colspan="6">Loading events...</td>
+                </tr>
+            </tbody>
+
+        </table>
+
+        <div id="status">Connecting to SentinelX API...</div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    const API_URL = "http://10.78.243.87:8000";
+
+
+    async function loadStats() {
+
+        try {
+
+            const response = await fetch(`${API_URL}/stats`);
+
+            const data = await response.json();
+
+            document.getElementById("total-events").textContent =
+                data.total_events;
+
+            document.getElementById("unique-ips").textContent =
+                data.unique_ips;
+
+            document.getElementById("high-risk").textContent =
+                data.high_risk_events;
+
+            document.getElementById("critical-events").textContent =
+                data.critical_events;
+
+            document.getElementById("total-iocs").textContent =
+                data.total_iocs;
+
+        } catch (error) {
+
+            console.error("Stats error:", error);
+
+        }
+    }
+
+
+    async function loadEvents() {
+
+        try {
+
+            const response = await fetch(`${API_URL}/events`);
+
+            const data = await response.json();
+
+            const table = document.getElementById("events-table");
+
+            table.innerHTML = "";
+
+
+            data.events.forEach(event => {
+
+                const row = document.createElement("tr");
+
+                row.innerHTML = `
+                    <td>${event.id}</td>
+                    <td>${event.source_ip}</td>
+                    <td>${event.service}</td>
+                    <td>${event.risk_score}</td>
+                    <td class="${event.risk_level}">
+                        ${event.risk_level}
+                    </td>
+                    <td>${event.data || "-"}</td>
+                `;
+
+                table.appendChild(row);
+
+            });
+
+
+            document.getElementById("status").textContent =
+                `Connected • ${data.total} events loaded`;
+
+        } catch (error) {
+
+            document.getElementById("status").textContent =
+                "Unable to connect to SentinelX API";
+
+            console.error("Events error:", error);
+
+        }
+    }
+
+
+    async function loadDashboard() {
+
+        await loadStats();
+        await loadEvents();
+
+    }
+
+
+    loadDashboard();
+
+</script>
+
+</body>
+</html>

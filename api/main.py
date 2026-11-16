@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -14,11 +15,11 @@ app = FastAPI(
 )
 
 
-# Serve dashboard files
+# Serve dashboard static files
 app.mount(
-    "/dashboard",
+    "/static",
     StaticFiles(directory="dashboard"),
-    name="dashboard"
+    name="static"
 )
 
 
@@ -59,7 +60,6 @@ def get_events():
     """)
 
     events = [dict(row) for row in cursor.fetchall()]
-
     connection.close()
 
     return {
@@ -80,7 +80,6 @@ def get_detections():
     """)
 
     detections = [dict(row) for row in cursor.fetchall()]
-
     connection.close()
 
     return {
@@ -101,7 +100,6 @@ def get_iocs():
     """)
 
     iocs = [dict(row) for row in cursor.fetchall()]
-
     connection.close()
 
     return {
@@ -115,10 +113,7 @@ def get_stats():
     connection = get_connection()
     cursor = connection.cursor()
 
-    cursor.execute("""
-        SELECT COUNT(*)
-        FROM events
-    """)
+    cursor.execute("SELECT COUNT(*) FROM events")
     total_events = cursor.fetchone()[0]
 
     cursor.execute("""
@@ -142,10 +137,7 @@ def get_stats():
     """)
     critical_events = cursor.fetchone()[0]
 
-    cursor.execute("""
-        SELECT COUNT(*)
-        FROM iocs
-    """)
+    cursor.execute("SELECT COUNT(*) FROM iocs")
     total_iocs = cursor.fetchone()[0]
 
     connection.close()
@@ -156,4 +148,57 @@ def get_stats():
         "high_risk_events": high_risk_events,
         "critical_events": critical_events,
         "total_iocs": total_iocs
+    }
+
+
+@app.get("/timeline")
+def get_timeline():
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT
+            substr(timestamp, 1, 13) AS hour,
+            COUNT(*) AS event_count
+        FROM events
+        GROUP BY hour
+        ORDER BY hour ASC
+    """)
+
+    timeline = [
+        dict(row) for row in cursor.fetchall()
+    ]
+
+    connection.close()
+
+    return {
+        "timeline": timeline
+    }
+
+
+@app.get("/top-ips")
+def get_top_ips():
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT
+            source_ip,
+            COUNT(*) AS event_count
+        FROM events
+        WHERE source_ip IS NOT NULL
+        GROUP BY source_ip
+        ORDER BY event_count DESC
+        LIMIT 5
+    """)
+
+    top_ips = [
+        dict(row) for row in cursor.fetchall()
+    ]
+
+    connection.close()
+
+    return {
+        "total": len(top_ips),
+        "top_ips": top_ips
     }

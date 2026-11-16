@@ -1,16 +1,24 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>SentinelX Dashboard</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
         }
 
         body {
@@ -21,7 +29,8 @@
         }
 
         header {
-            padding: 24px 40px;
+            width: 100%;
+            padding: 24px clamp(16px, 3vw, 40px);
             border-bottom: 1px solid #1e293b;
             background: #111827;
         }
@@ -36,17 +45,27 @@
         }
 
         .container {
-            padding: 30px 40px;
+            width: 100%;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px clamp(12px, 3vw, 40px);
         }
+
+        /* KPI CARDS */
 
         .cards {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(
+                auto-fit,
+                minmax(min(100%, 190px), 1fr)
+            );
             gap: 18px;
             margin-bottom: 30px;
+            width: 100%;
         }
 
         .card {
+            min-width: 0;
             background: #1e293b;
             border: 1px solid #334155;
             border-radius: 10px;
@@ -64,24 +83,59 @@
             font-weight: bold;
         }
 
+        /* DASHBOARD SECTIONS */
+
         .dashboard-section {
+            width: 100%;
+            min-width: 0;
+            overflow: hidden;
             background: #1e293b;
             border: 1px solid #334155;
             border-radius: 10px;
             padding: 24px;
+            margin-bottom: 25px;
         }
 
         .dashboard-section h2 {
             margin-bottom: 20px;
+            font-size: 22px;
+        }
+
+        /* CHARTS */
+
+        .chart-container {
+            position: relative;
+            height: 320px;
+            width: 100%;
+            min-width: 0;
+        }
+
+        .top-ips-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            min-width: 0;
+        }
+
+        .severity-container {
+            max-width: 420px;
+            margin: auto;
+            height: 320px;
+        }
+
+        /* EVENTS TABLE */
+
+        .table-container {
+            overflow-x: auto;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 650px;
         }
 
-        th,
-        td {
+        th, td {
             text-align: left;
             padding: 14px;
             border-bottom: 1px solid #334155;
@@ -116,14 +170,55 @@
             font-weight: bold;
         }
 
-        #status {
-            margin-top: 20px;
+        #status,
+        #timeline-status,
+        #severity-status,
+        #top-ips-status {
+            margin-top: 15px;
             color: #94a3b8;
+            font-size: 13px;
         }
 
-        @media (max-width: 1000px) {
+        /* RESPONSIVE DESIGN */
+
+        @media (max-width: 700px) {
+            .container {
+                padding: 18px 12px;
+            }
+
+            header {
+                padding: 18px 12px;
+            }
+
             .cards {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .card .value {
+                font-size: 25px;
+            }
+
+            .dashboard-section {
+                padding: 16px;
+            }
+
+            .chart-container {
+                height: 260px;
+            }
+
+            .severity-container {
+                height: 260px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .cards {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -137,6 +232,8 @@
 </header>
 
 <div class="container">
+
+    <!-- KPI CARDS -->
 
     <div class="cards">
 
@@ -168,30 +265,81 @@
     </div>
 
 
+    <!-- ATTACK TIMELINE -->
+
+    <div class="dashboard-section">
+
+        <h2>Attack Timeline</h2>
+
+        <div class="chart-container">
+            <canvas id="attackTimelineChart"></canvas>
+        </div>
+
+        <div id="timeline-status">Loading timeline...</div>
+
+    </div>
+
+
+    <!-- SEVERITY DISTRIBUTION -->
+
+    <div class="dashboard-section">
+
+        <h2>Severity Distribution</h2>
+
+        <div class="severity-container">
+            <canvas id="severityChart"></canvas>
+        </div>
+
+        <div id="severity-status">Loading severity data...</div>
+
+    </div>
+
+
+    <!-- TOP SOURCE IPS -->
+
+    <div class="dashboard-section">
+
+        <h2>Top 5 Source IPs</h2>
+
+        <div class="top-ips-container">
+            <canvas id="topIpsChart"></canvas>
+        </div>
+
+        <div id="top-ips-status">Loading source IP data...</div>
+
+    </div>
+
+
+    <!-- RECENT EVENTS -->
+
     <div class="dashboard-section">
 
         <h2>Recent Events</h2>
 
-        <table>
+        <div class="table-container">
 
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Source IP</th>
-                    <th>Service</th>
-                    <th>Risk Score</th>
-                    <th>Risk Level</th>
-                    <th>Data</th>
-                </tr>
-            </thead>
+            <table>
 
-            <tbody id="events-table">
-                <tr>
-                    <td colspan="6">Loading events...</td>
-                </tr>
-            </tbody>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Source IP</th>
+                        <th>Service</th>
+                        <th>Risk Score</th>
+                        <th>Risk Level</th>
+                        <th>Data</th>
+                    </tr>
+                </thead>
 
-        </table>
+                <tbody id="events-table">
+                    <tr>
+                        <td colspan="6">Loading events...</td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
 
         <div id="status">Connecting to SentinelX API...</div>
 
@@ -202,14 +350,24 @@
 
 <script>
 
-    const API_URL = "http://10.78.243.87:8000";
+    const API_URL = window.location.origin;
 
+    let attackChart = null;
+    let severityChart = null;
+    let topIpsChart = null;
+
+
+    // LOAD STATISTICS
 
     async function loadStats() {
 
         try {
 
             const response = await fetch(`${API_URL}/stats`);
+
+            if (!response.ok) {
+                throw new Error("Stats API failed");
+            }
 
             const data = await response.json();
 
@@ -236,11 +394,17 @@
     }
 
 
+    // LOAD EVENTS
+
     async function loadEvents() {
 
         try {
 
             const response = await fetch(`${API_URL}/events`);
+
+            if (!response.ok) {
+                throw new Error("Events API failed");
+            }
 
             const data = await response.json();
 
@@ -248,26 +412,57 @@
 
             table.innerHTML = "";
 
-
             data.events.forEach(event => {
 
                 const row = document.createElement("tr");
 
-                row.innerHTML = `
-                    <td>${event.id}</td>
-                    <td>${event.source_ip}</td>
-                    <td>${event.service}</td>
-                    <td>${event.risk_score}</td>
-                    <td class="${event.risk_level}">
-                        ${event.risk_level}
-                    </td>
-                    <td>${event.data || "-"}</td>
-                `;
+                const values = [
+                    event.id,
+                    event.source_ip,
+                    event.service,
+                    event.risk_score,
+                    event.risk_level,
+                    event.data || "-"
+                ];
+
+                values.forEach((value, index) => {
+
+                    const cell = document.createElement("td");
+
+                    cell.textContent = value ?? "-";
+
+                    if (index === 4) {
+
+                        const level = String(value || "").toLowerCase();
+
+                        if (
+                            ["critical", "high", "medium", "low"].includes(level)
+                        ) {
+                            cell.classList.add(level);
+                        }
+
+                    }
+
+                    row.appendChild(cell);
+
+                });
 
                 table.appendChild(row);
 
             });
 
+            if (data.events.length === 0) {
+
+                const row = document.createElement("tr");
+                const cell = document.createElement("td");
+
+                cell.colSpan = 6;
+                cell.textContent = "No events found";
+
+                row.appendChild(cell);
+                table.appendChild(row);
+
+            }
 
             document.getElementById("status").textContent =
                 `Connected • ${data.total} events loaded`;
@@ -283,7 +478,297 @@
     }
 
 
+    // LOAD ATTACK TIMELINE
+
+    async function loadTimeline() {
+
+        const status = document.getElementById("timeline-status");
+
+        try {
+
+            const response = await fetch(`${API_URL}/timeline`);
+
+            if (!response.ok) {
+                throw new Error("Timeline API failed");
+            }
+
+            const data = await response.json();
+
+            const labels = data.timeline.map(item => item.hour);
+
+            const counts = data.timeline.map(item => item.event_count);
+
+            if (attackChart) {
+                attackChart.destroy();
+            }
+
+            attackChart = new Chart(
+                document.getElementById("attackTimelineChart"),
+                {
+                    type: "line",
+
+                    data: {
+                        labels: labels,
+
+                        datasets: [{
+                            label: "Honeypot Events",
+                            data: counts,
+                            borderColor: "#38bdf8",
+                            backgroundColor: "rgba(56, 189, 248, 0.15)",
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 5
+                        }]
+                    },
+
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: "#e2e8f0"
+                                }
+                            }
+                        },
+
+                        scales: {
+                            x: {
+                                ticks: {
+                                    color: "#94a3b8"
+                                },
+                                grid: {
+                                    color: "#334155"
+                                }
+                            },
+
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0,
+                                    color: "#94a3b8"
+                                },
+                                grid: {
+                                    color: "#334155"
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+            status.textContent =
+                `${data.timeline.length} time intervals loaded`;
+
+        } catch (error) {
+
+            status.textContent = "Unable to load attack timeline";
+
+            console.error("Timeline error:", error);
+
+        }
+
+    }
+
+
+    // LOAD SEVERITY DISTRIBUTION
+
+    async function loadSeverity() {
+
+        const status = document.getElementById("severity-status");
+
+        try {
+
+            const response = await fetch(`${API_URL}/detections`);
+
+            if (!response.ok) {
+                throw new Error("Detections API failed");
+            }
+
+            const data = await response.json();
+
+            const severities = ["low", "medium", "high", "critical"];
+
+            const counts = severities.map(level =>
+                data.detections.filter(
+                    detection =>
+                        String(detection.severity).toLowerCase() === level
+                ).length
+            );
+
+            if (severityChart) {
+                severityChart.destroy();
+            }
+
+            severityChart = new Chart(
+                document.getElementById("severityChart"),
+                {
+                    type: "doughnut",
+
+                    data: {
+                        labels: ["Low", "Medium", "High", "Critical"],
+
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: [
+                                "#4ade80",
+                                "#facc15",
+                                "#fb923c",
+                                "#f87171"
+                            ],
+                            borderColor: "#1e293b",
+                            borderWidth: 3
+                        }]
+                    },
+
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+
+                        plugins: {
+                            legend: {
+                                position: "bottom",
+                                labels: {
+                                    color: "#e2e8f0",
+                                    padding: 20
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+            status.textContent =
+                `${data.total} detections analysed`;
+
+        } catch (error) {
+
+            status.textContent = "Unable to load severity data";
+
+            console.error("Severity error:", error);
+
+        }
+
+    }
+
+
+    // LOAD TOP SOURCE IPS
+
+    async function loadTopIps() {
+
+        const status = document.getElementById("top-ips-status");
+
+        try {
+
+            const response = await fetch(`${API_URL}/top-ips`);
+
+            if (!response.ok) {
+                throw new Error("Top IPs API failed");
+            }
+
+            const data = await response.json();
+
+            const labels = data.top_ips.map(item => item.source_ip);
+
+            const counts = data.top_ips.map(item => item.event_count);
+
+            if (topIpsChart) {
+                topIpsChart.destroy();
+            }
+
+            topIpsChart = new Chart(
+                document.getElementById("topIpsChart"),
+                {
+                    type: "bar",
+
+                    data: {
+                        labels: labels,
+
+                        datasets: [{
+                            label: "Events by Source IP",
+                            data: counts,
+                            backgroundColor: "rgba(56, 189, 248, 0.75)",
+                            borderColor: "#38bdf8",
+                            borderWidth: 1,
+                            borderRadius: 6
+                        }]
+                    },
+
+                    options: {
+                        indexAxis: "y",
+                        responsive: true,
+                        maintainAspectRatio: false,
+
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: "#e2e8f0"
+                                }
+                            }
+                        },
+
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: "#94a3b8",
+                                    precision: 0
+                                },
+                                grid: {
+                                    color: "#334155"
+                                }
+                            },
+
+                            y: {
+                                ticks: {
+                                    color: "#94a3b8"
+                                },
+                                grid: {
+                                    color: "#334155"
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+            status.textContent =
+                `${data.total} source IPs analysed`;
+
+        } catch (error) {
+
+            status.textContent = "Unable to load source IP data";
+
+            console.error("Top IPs error:", error);
+
+        }
+    }
+
+
+    // LOAD COMPLETE DASHBOARD
+
     async function loadDashboard() {
+
+        if (typeof Chart === "undefined") {
+
+            document.getElementById("timeline-status").textContent =
+                "Chart.js unavailable. Check internet connection.";
+
+            document.getElementById("severity-status").textContent =
+                "Chart.js unavailable.";
+
+            document.getElementById("top-ips-status").textContent =
+                "Chart.js unavailable.";
+
+        } else {
+
+            await loadTimeline();
+            await loadSeverity();
+            await loadTopIps();
+
+        }
 
         await loadStats();
         await loadEvents();
@@ -291,7 +776,14 @@
     }
 
 
+    // INITIAL LOAD
+
     loadDashboard();
+
+
+    // AUTO REFRESH EVERY 30 SECONDS
+
+    setInterval(loadDashboard, 30000);
 
 </script>
 
